@@ -11,9 +11,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter
 from statistics import mean
-from typing import Optional
 
 import anthropic
 from rich.console import Console
@@ -79,14 +77,16 @@ def _compute_churn_risk(
         score = 0.0
         score += min(len(churn_moments) * 0.25, 0.50)
         score += min(len(feature_gaps) * 0.10, 0.25)
-        score += max(0.0, (3.0 - record.sentiment_score) / 3.0) * 0.25
+        # Sentiment penalty: full 0.25 at score=1.0, zero at score>=3.5
+        # Scores are 1–5; normalize against the negative half of the scale
+        score += max(0.0, (3.5 - record.sentiment_score) / 2.5) * 0.25
 
         arc = compute_sentiment_arc(record)
         if arc == "declining":
             score += 0.10
 
         score = min(score, 1.0)
-        risk_tier = "high" if score >= 0.65 else "medium" if score >= 0.35 else "low"
+        risk_tier = "high" if score >= 0.60 else "medium" if score >= 0.30 else "low"
 
         signal = ChurnSignal(
             meeting_id=record.meeting_id,
@@ -218,7 +218,7 @@ def _infer_action_owner(record: TranscriptRecord, action_item: str) -> str:
 
 def _compute_escalations(
     transcripts: list[TranscriptRecord],
-    cluster_label_map: dict[int, str],
+    cluster_label_map: dict[int, str],  # noqa: ARG001 — reserved for future cluster-aware routing
 ) -> list[EscalationFlag]:
     client = anthropic.Anthropic()
     results: list[EscalationFlag] = []
@@ -351,5 +351,7 @@ def _log_summary(churn, escalations, actions, speakers):
 
 
 def _extract_json(text: str) -> str:
+    # Strip markdown code fences if present
+    text = re.sub(r"```(?:json)?\s*", "", text).strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
-    return match.group(0) if match else text
+    return match.group(0) if match else "{}"

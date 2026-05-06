@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 
-load_dotenv()
+load_dotenv(".env", override=True)
 console = Console()
 
 

@@ -171,5 +171,6 @@ def run_labeling(state: PipelineState) -> PipelineState:
 
 
 def _extract_json(text: str) -> str:
+    text = re.sub(r"```(?:json)?\s*", "", text).strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
-    return match.group(0) if match else text
+    return match.group(0) if match else "{}"

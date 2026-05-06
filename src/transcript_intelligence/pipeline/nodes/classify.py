@@ -155,6 +155,7 @@ def _rule_classify(record: TranscriptRecord) -> str | None:
 
 
 def _extract_json(text: str) -> str:
-    """Extract JSON object from LLM response that may have extra text."""
+    """Extract JSON object from LLM response that may have extra text or markdown fences."""
+    text = re.sub(r"```(?:json)?\s*", "", text).strip()
     match = re.search(r"\{[^{}]+\}", text, re.DOTALL)
-    return match.group(0) if match else text
+    return match.group(0) if match else '{"call_type": "internal"}'

@@ -13,4 +13,6 @@ wheels/
 
 .idea/
 
+outputs/
+
 .DS_Store/
