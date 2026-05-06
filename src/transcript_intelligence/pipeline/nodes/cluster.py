@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from collections import Counter
 from statistics import mean
 
@@ -98,7 +99,7 @@ def run_labeling(state: PipelineState) -> PipelineState:
     transcripts = state["classified_transcripts"]
     num_clusters = state["num_clusters"]
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(max_retries=5)
     cluster_results: list[ClusterResult] = []
 
     # Group records by cluster
@@ -166,6 +167,7 @@ def run_labeling(state: PipelineState) -> PipelineState:
             avg_sentiment_score=mean(m.sentiment_score for m in members),
         ))
         console.print(f"  Cluster {cluster_id} ({len(members)} calls): [bold]{label}[/bold]")
+        time.sleep(1)
 
     return {**state, "cluster_results": cluster_results}
 

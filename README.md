@@ -88,6 +88,22 @@ cp .env.example .env
 | `DATA_DIR` | `dataset` | Path to directory containing transcript folders |
 | `OUTPUTS_DIR` | `outputs` | Path where results, charts, and PPTX are written |
 
+## Key Results
+
+Actual findings from running the pipeline on the 100-transcript dataset:
+
+| Metric | Result |
+|---|---|
+| Transcripts analyzed | 100 |
+| Classification | 30 internal / 30 support / 40 external — 100% rule-based, zero LLM fallbacks |
+| Topic clusters | 11 clusters discovered; 17 noise/uncategorized transcripts |
+| Sentiment (avg score 1–5) | Support: 2.86 · Internal: 3.42 · External: 3.83 |
+| High-risk churn accounts | 6 (score ≥ 0.60) |
+| Escalation flags | 30 (critical + moderate combined) |
+| Action items tracked | 397 with inferred speaker ownership |
+| Speaker engagement records | 311 speaker-call pairs |
+| Weekly trend coverage | 13 ISO weeks |
+
 ## Input Format
 
 Each transcript lives in its own directory under `DATA_DIR`, named by meeting ID. Six JSON files are expected per transcript:
@@ -121,17 +137,14 @@ All artifacts are written to `OUTPUTS_DIR`:
 outputs/
 ├── transcript_intelligence.pptx    # 12-slide executive presentation
 ├── results.json                    # Complete structured results
-└── charts/
-    ├── cluster_map.html
-    ├── sentiment_by_call_type.html
-    ├── sentiment_trend.html
-    ├── churn_risk_heatmap.html
-    ├── action_items_treemap.html
-    ├── sentiment_by_cluster.html
-    ├── escalation_flags.html
-    ├── speaker_talk_time.html
-    ├── key_moment_types.html
-    └── cluster_composition.html
+└── charts/                         # 14 files: interactive HTML + static PNG per chart
+    ├── cluster_map.html / .png
+    ├── sentiment_by_call_type.html / .png
+    ├── sentiment_trend.html / .png
+    ├── churn_risk_heatmap.html / .png
+    ├── action_items_treemap.html / .png
+    ├── sentiment_by_cluster.html / .png
+    └── escalation_flags.html / .png
 ```
 
 ### results.json Structure
@@ -139,13 +152,13 @@ outputs/
 ```json
 {
   "summary": {
-    "total_transcripts": 102,
-    "classification_stats": { "internal": 12, "support": 28, "external": 62 },
-    "num_clusters": 15,
-    "noise_count": 4,
-    "total_action_items": 340,
-    "escalations_detected": 8,
-    "high_churn_risk_calls": 11
+    "total_transcripts": 100,
+    "classification_stats": { "internal": 30, "support": 30, "external": 40 },
+    "num_clusters": 11,
+    "noise_count": 17,
+    "total_action_items": 397,
+    "escalations_detected": 30,
+    "high_churn_risk_calls": 6
   },
   "transcripts": [...],
   "clusters": [...],
@@ -164,7 +177,7 @@ outputs/
 | Local MiniLM embeddings | No API cost or latency; 384-dim vectors sufficient for ~100 transcript scale |
 | Rules-first classification | Covers ~95% of calls in milliseconds; LLM fallback reserved for ambiguous edge cases |
 | HDBSCAN over k-means | Discovers emergent topic clusters without requiring a pre-specified number of clusters; handles noise gracefully |
-| LLM enrichment only for high-risk | Targets Claude API calls to churn (≥0.65 score) and critical escalations, minimizing cost |
+| LLM enrichment only for high-risk | Targets Claude API calls to churn (score ≥ 0.60) and critical escalations, minimizing cost |
 | LangGraph state machine | Provides debuggable, observable, and easily extensible pipeline structure |
 | Automated PPTX | Eliminates manual slide creation; enables rapid stakeholder communication after each pipeline run |
 
@@ -172,8 +185,8 @@ outputs/
 
 | Task | Model |
 |---|---|
-| Ambiguous call classification | `claude-haiku-4-5` |
-| Cluster labeling, churn enrichment, escalation owner | `claude-sonnet-4-6` |
+| Ambiguous call classification + escalation recommended owner | `claude-haiku-4-5` |
+| Cluster labeling + churn enrichment | `claude-sonnet-4-6` |
 | Sentence embeddings | `all-MiniLM-L6-v2` (local) |
 
 ## Dependencies

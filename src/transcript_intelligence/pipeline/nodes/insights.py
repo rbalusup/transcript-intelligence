@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from statistics import mean
 
 import anthropic
@@ -64,7 +65,7 @@ def _compute_churn_risk(
     transcripts: list[TranscriptRecord],
     cluster_label_map: dict[int, str],
 ) -> list[ChurnSignal]:
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(max_retries=5)
     results: list[ChurnSignal] = []
 
     external_calls = [r for r in transcripts if r.call_type in ("external", "support")]
@@ -126,6 +127,8 @@ def _compute_churn_risk(
                 })
             except Exception as e:
                 console.print(f"[yellow]  Churn enrichment skipped for {record.meeting_id}: {e}[/yellow]")
+            else:
+                time.sleep(1)
 
         results.append(signal)
 
@@ -220,7 +223,7 @@ def _compute_escalations(
     transcripts: list[TranscriptRecord],
     cluster_label_map: dict[int, str],  # noqa: ARG001 — reserved for future cluster-aware routing
 ) -> list[EscalationFlag]:
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(max_retries=5)
     results: list[EscalationFlag] = []
 
     for record in transcripts:
